@@ -1,6 +1,4 @@
-# Backwards symbolic execution for tainting argumentation.
-
-We are working here.
+# Forward symbolic execution for taint analysis in Python
 
 ## Installation
 
