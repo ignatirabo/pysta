@@ -1,0 +1,173 @@
+type zexpr = Z3.Expr.expr * Taint.t
+type zstatus = SAT | UNSAT | UNKNOWN
+type zsymbol = Z3.Symbol.symbol
+type zsolver = Z3.Solver.solver
+let cfg = [("model", "true"); ("proof", "false")]
+let ctx = (Z3.mk_context cfg)
+let isort = (Z3.Arithmetic.Integer.mk_sort ctx)
+
+(* Helpers *)
+let apply_pair f (e0,t0) (e1,t1) = f ctx e0 e1, Taint.comb t0 t1
+let apply_list f zls =
+  let (es,ts) = List.split zls in
+  let e = f ctx es in
+  let t = List.fold_left Taint.comb Taint.TNone ts in
+  (e,t)
+    
+(* Expressions *)
+let mk_true = Z3.Boolean.mk_true ctx, Taint.TNone
+let mk_false = Z3.Boolean.mk_false ctx, Taint.TNone
+let mk_numeral_i i = Z3.Arithmetic.Integer.mk_numeral_i ctx i, Taint.TNone
+let mk_bool b = Z3.Boolean.mk_val ctx b, Taint.TNone
+let mk_symbol s = Z3.Symbol.mk_symbol ctx s
+let mk_const zs = Z3.Expr.mk_const ctx zs isort, Taint.tempty
+let mk_add zls =
+  let (es,ts) = List.split zls in
+  let e = Z3.Arithmetic.mk_add ctx es in
+  let t = List.fold_left Taint.glb Taint.TNone ts in
+  (e,t)
+let mk_sub = apply_list Z3.Arithmetic.mk_sub
+let mk_mul = apply_list Z3.Arithmetic.mk_mul
+let mk_div = apply_pair Z3.Arithmetic.mk_div
+let mk_mod ze0 ze1 = apply_pair Z3.Arithmetic.Integer.mk_mod ze0 ze1
+let mk_le ze0 ze1 = apply_pair Z3.Arithmetic.mk_le ze0 ze1
+let mk_lt ze0 ze1 = apply_pair Z3.Arithmetic.mk_lt ze0 ze1
+let mk_eq ze0 ze1 = apply_pair Z3.Boolean.mk_eq ze0 ze1
+let mk_not (e,t) = Z3.Boolean.mk_not ctx e, t
+let mk_ge ze0 ze1 = apply_pair Z3.Arithmetic.mk_ge ze0 ze1
+let mk_gt ze0 ze1 = apply_pair Z3.Arithmetic.mk_gt ze0 ze1
+let mk_and = apply_list Z3.Boolean.mk_and
+let mk_or = apply_list Z3.Boolean.mk_or
+let to_string ((e,t): zexpr) =
+  let ts = match t with
+  | TNone -> "None"
+  | TNeither -> "Neither"
+  | TSome t -> Taint.tset_2string t in
+  "(" ^ (Z3.Expr.to_string e) ^ "," ^ ts ^ ")"
+let to_z3 (e,_) = e
+let from_z3 ze = (ze,Taint.tempty)
+let z3status_to_zstatus z3stat =
+  match z3stat with
+  | Z3.Solver.SATISFIABLE -> SAT
+  | Z3.Solver.UNSATISFIABLE -> UNSAT
+  | Z3.Solver.UNKNOWN -> UNKNOWN
+(* Check *)
+let check zls =
+  let (zls,_) = List.split zls in
+  let g = Z3.Goal.mk_goal ctx true false false in
+  Z3.Goal.add g zls;
+  let solver = Z3.Solver.mk_solver ctx None in
+  List.iter (fun a -> (Z3.Solver.add solver [ a ])) (Z3.Goal.get_formulas g);
+  let zstat = z3status_to_zstatus (Z3.Solver.check solver []) in
+  (zstat, solver)
+let get_string_model zls (zstat, zsolv) =
+  if List.length zls > 0 && zstat = SAT then
+    let m = Z3.Solver.get_model zsolv in
+    match m with
+    | Some m -> Some (Z3.Model.to_string m)
+    | None -> None
+  else
+    None
+let get_args (e,_) = Z3.Expr.get_args e
+let compare ze0 ze1 = Z3.Expr.compare (fst ze0) (fst ze1)
+
+let print_expr chan ze = Printf.fprintf chan "%s" (to_string ze)
+let rec print_prop chan xs : unit =
+  match xs with
+  | [] -> ()
+  | [x] -> print_expr chan x
+  | x::y::xs ->
+    Printf.fprintf chan "%a /\\ " print_expr x;
+    print_prop chan (y::xs)
+
+let pp_zstatus chan = function
+| SAT -> Printf.fprintf chan "SAT"
+| UNSAT -> Printf.fprintf chan "UNSAT"
+| UNKNOWN -> Printf.fprintf chan "UNKNOWN"
+
+let set_taint (e,_) t = (e,t)
+let get_taint = snd
+let to_string_expr (e,_) =
+  Z3.Expr.to_string e
+let to_string_taint (_,t) = match t with
+  | Taint.TNone -> "None"
+  | TNeither -> "Neither"
+  | TSome t -> Taint.tset_2string t
+
+module SSet = String_helper.SSet
+module SMap = String_helper.SMap
+
+module O = Language.Ops
+module E = Language.Expr
+
+let uop_eval (uop : O.uop) (se : zexpr) =
+  match uop with
+  | Onot -> mk_not se
+
+(** Evaluate binary operation op with Z3 expressions se0 and se1 *)
+let op_eval (op : O.op) (ze0 : zexpr) (ze1: zexpr) : zexpr =
+  match op with
+  | Oadd -> mk_add [ze0; ze1]
+  | Osub -> mk_sub [ze0; ze1]
+  | Omul -> mk_mul [ze0; ze1]
+  | Odiv -> mk_div ze0 ze1
+  | Omod -> mk_mod ze0 ze1
+  | Ole -> mk_le ze0 ze1
+  | Olt -> mk_lt ze0 ze1
+  | Oeq -> mk_eq ze0 ze1
+  | One -> mk_not (mk_eq ze0 ze1)
+  | Oge -> mk_ge ze0 ze1
+  | Ogt -> mk_gt ze0 ze1
+  | Oand -> mk_and [ze0; ze1]
+  | Oor -> mk_or [ze0; ze1]
+
+let rec expr_eval (e : E.expr): E.expr =
+  match e with
+  | Ecsti n ->
+    let i = mk_numeral_i n in
+    i
+  | Ecstb b ->
+    let b = mk_bool b in
+    b
+  | Evar v ->
+    SMap.find v m
+  | Euop (op, e) ->
+    let e' = expr_eval e m in
+    uop_eval op e'
+  | Eop (e0, op, e1) ->
+    let e0' = expr_eval e0 m in
+    let e1' = expr_eval e1 m in
+    op_eval op e0' e1'
+  | _ -> failwith "SMT eval of Ecall" 
+
+
+(* SYMBOLS - START *************************)
+(** Variable name *)
+type vname = string
+
+type valuation = zexpr SMap.t
+let valua : valuation ref = ref SMap.empty
+let used_vnames = ref SSet.empty
+let clear_vnames : unit -> unit = fun _ -> used_vnames := SSet.empty
+let new_name (v: vname) : vname =
+  let rec aux vname = function
+  | i0 ->
+    let str0 = String.concat "" [vname; "_"; Int.to_string i0] in
+    let op0 = (try Some (SSet.find str0 !used_vnames)
+    with Not_found -> None) in
+    if (op0 = None ) then (
+      used_vnames := SSet.add str0 !used_vnames;
+      str0)
+    else
+      aux vname (i0+1) in
+  aux v 0
+
+let new_var (v: vname) : vname =
+  let v' = new_name v in
+  let zexp = mk_const (mk_symbol v') in
+  valua := SMap.add v' zexp !valua;
+  v'
+
+let get_valuation () = !valua
+let get v = SMap.find v !valua
+(* SYMBOLS - END *************************)

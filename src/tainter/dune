@@ -1,0 +1,16 @@
+(ocamllex
+  (modules pysasig_lexer)
+)
+
+(ocamlyacc
+  (modules pysasig_parser)
+)
+
+(executables
+  ;(names main)
+  (names main main_py)
+  (flags -w +9)
+  (preprocess (pps ppx_compare))
+  (libraries core threads apron apron.boxMPQ apron.octMPQ apron.polkaMPQ bitv unix z3 pyreir sqlite3 yojson)
+  (modes native)
+)

@@ -1,0 +1,5 @@
+(library
+  (name pyreir)
+  (flags -w +9)
+  (preprocess (pps ppx_deriving.show))
+  (libraries pyre-ast))
