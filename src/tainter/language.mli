@@ -39,7 +39,7 @@ module Expr : sig
     | Tuop       of Taint.t * Ops.uop * expr       (** unary negation   *)
     | Tbop        of Taint.t * expr * Ops.op * expr (** binary op        *)
     | Tobj       of cname option * texpr SMap.t    (** object *)
-  
+
   val compare_texpr : texpr -> texpr -> int
   type lexpr =
     | Name of vname (** Variable *)

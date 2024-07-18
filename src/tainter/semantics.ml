@@ -155,8 +155,6 @@ let get_taint_clss clssname attr ctx : T.t option =
     None
     (* failwith "eval_subscript: empty output." *)
 
-exception Vague_method
-
 let fun_taint_input sign te_ls fname loc cnf ctx : Flag.flag * (string * E.texpr) list=
   let sanitize = S.get_sanitize sign in
   let input_args = ref (S.get_input sign) in
