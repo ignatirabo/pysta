@@ -30,8 +30,8 @@ let get_column row i  =
 
 let check_sapp_db filename db : Location.t option =
   let filename = String.split_on_char '/' filename |> List.rev |> List.hd in
-  let pysa_dir = "../pysa_playground/" in
-  let db_name = pysa_dir ^ db in
+  (* let pysa_dir = "../pysa_playground/" in *)
+  let db_name = db in
   let db = Sqlite3.db_open db_name in
   let query = "SELECT messages.contents, trace_frames.kind, trace_frames.caller_port, trace_frames.callee_location, trace_frames.callee_port FROM messages JOIN trace_frames
   ON messages.id = trace_frames.filename_id AND messages.kind='filename'
