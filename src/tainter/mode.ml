@@ -38,7 +38,7 @@ let str_to_analysis (s: string) : analysis =
   | "pytaint" -> S_pytaint
   | _ -> failwith "Unkown analysis"
 let non_rel_dom_to_str = function
-  | S_pytaint -> "Python tainting" 
+  | S_pytaint -> "Python tainting"
 
 let mode_to_str = function
   | M_interpret -> "Interpret"
@@ -53,13 +53,17 @@ let mode_to_str = function
 type t =  { smode:smode ; mode:mode ; analysis:analysis; db:string; file_taint:string;
             file_prog:string ; file_sig:string ; dir_lib:string ; locs:string }
 
+let file_sig = "stubs/taint/general.pysa"
+let file_taint = "stubs/taint/taint.config"
+let sapp_db = "sapp.db"
+
 let parse () : t =
   Printf.printf "Parsing input.\n";
   let file_prog = ref ""
-  and file_sig = ref "../pysa_playground/stubs/taint/general.pysa"
-  and file_taint = ref "../pysa_playground/stubs/taint/taint.config"
+  and file_sig = ref file_sig
+  and file_taint = ref file_taint
   and dir_lib = ref "library"
-  and db = ref "sapp.db"
+  and db = ref sapp_db
   and locs = ref ""
   and mode: mode ref = ref M_analysis
   and smode: smode ref = ref SM_file
