@@ -17,7 +17,7 @@ let analyze ?(json=false) filename prog sign locs (config: Mode.t) : Yojson.Basi
       begin
         if json then
           let json_string = Yojson.Basic.to_string json_data in
-          let json_string = Test.replace_single_quote json_string in
+          let json_string = Test.replace_double_quote json_string in
           print_endline json_string
           (* () *)
       end;
