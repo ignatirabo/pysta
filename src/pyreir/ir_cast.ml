@@ -1,6 +1,6 @@
 module C = PyreAst.Concrete
 
-let debug = ref true
+let debug = ref false
 
 let get_line (loc: C.Location.t) : int =
   (* Printf.printf "start.line=%d, start.column=%d; stop.line=%d, stop.column=%d\n"
