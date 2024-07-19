@@ -8,3 +8,4 @@ def f(x):
 x = input()
 r = f(x)
 print(r)
+
