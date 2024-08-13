@@ -298,7 +298,6 @@ and expr_eval ?(typ=None) (e : E.expr) (cnf: config) (ctx: context) : (E.texpr o
     match e with
     | Econst c -> [ Some (Tconst (Taint.empty,c)), cnf ]
     | Evar v ->
-      (* TODO: fix bug, not checking type of v *)
       let te, state = D.find ~typ v cnf.state in
       [ Some te, { cnf with state } ]
     | Euop (op, e) ->
