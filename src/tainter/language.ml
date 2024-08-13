@@ -527,6 +527,10 @@ let rec typ_to_smt = function
   | String -> Smt.String
   | Bool -> Smt.Bool
   | List typ -> Smt.List (typ_to_smt typ)
+let typ_option_to_smt typo =
+  match typo with
+  | None -> None
+  | Some typ -> Some (typ_to_smt typ)
 
 (** Statements *)
 type stmt =

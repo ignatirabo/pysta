@@ -50,24 +50,12 @@ let new_obj (k: state) (v: vname) (clssname: string option) : state =
   let e: texpr = Tobj (clssname, SMap.empty) in
   { k with svm = Svm.update v (fun _ -> Some e) k.svm }
 
-let typ_to_smt (typ: Language.typ option) : SMT.typ option =
-  let rec aux typ =
-  match (typ: Language.typ) with
-  | Int -> SMT.Int
-  | String -> SMT.String
-  | List t -> SMT.List (aux t)
-  | Bool -> SMT.Bool
- in
-  match typ with
-  | None -> None
-  | Some t -> Some (aux t)
-
 (** Creates new symbolic, not related to any variable *)
 let new_symbol ?(typ=None) (v: vname) : expr =
-  let sv = SMT.new_var ~typ:(typ_to_smt typ) v in
+  let sv = SMT.new_var ~typ:(L.typ_option_to_smt typ) v in
   Evar sv
 let new_tsymbol ?(typ=None) ?(taint=None) (v: vname) : texpr =
-  let sv = SMT.new_var ~typ:(typ_to_smt typ) v in
+  let sv = SMT.new_var ~typ:(L.typ_option_to_smt typ) v in
   let taint = match taint with
     | None -> Taint.empty
     | Some taint -> taint in

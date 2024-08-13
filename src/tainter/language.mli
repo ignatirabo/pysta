@@ -100,6 +100,7 @@ type lexpr := E.lexpr
 type typ = Int | String | List of typ | Bool
 val typ_to_str : typ -> string
 val typ_to_smt : typ -> Smt.typ
+val typ_option_to_smt : typ option -> Smt.typ option
 
 type stmt =
   | Assign of lexpr * typ option * expr
