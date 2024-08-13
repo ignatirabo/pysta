@@ -5,10 +5,17 @@ module L = Location
 
 module Ops : sig
   type uop = Onot
-  type op = Oadd | Osub | Omul | Odiv | Omod | Opow | Ole | Olt | Oeq
-          | One | Oge | Ogt | Oand | Oor
+  type op_arith = Oadd | Osub | Omul | Odiv | Omod | Opow
+  type op_bool = Ole | Olt | Oeq | One | Oge | Ogt
+  type op_logic = Oand | Oor
+  type op = Oarith of op_arith | Obool of op_bool | Ologic of op_logic
   val uop_2str : uop -> string
   val op_2str : op -> string
+  val op_neg : op -> op
+  val op_arith_2fun : op_arith -> (int -> int -> int)
+  val op_bool_2fun : op_bool -> (int -> int -> bool)
+  val op_logic_2fun : op_logic -> (bool -> bool -> bool)
+  val is_op_logic : op -> bool
 end
 
 module Expr : sig
@@ -92,6 +99,7 @@ type expr := E.expr
 type lexpr := E.lexpr
 type typ = Int | String | List of typ | Bool
 val typ_to_str : typ -> string
+val typ_to_smt : typ -> Smt.typ
 
 type stmt =
   | Assign of lexpr * typ option * expr

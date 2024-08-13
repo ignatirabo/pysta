@@ -23,22 +23,22 @@ type prog = P.prog
 
 let from_bop (bop: Ir_sig.bop) : O.op =
   match bop with
-  | And -> Oand
-  | Or -> Oor
-  | Add -> Oadd
-  | Sub -> Osub
-  | Mult -> Omul
-  | Div -> Odiv
-  | Pow -> Opow
+  | And  -> Ologic Oand
+  | Or   -> Ologic Oor
+  | Add  -> Oarith Oadd
+  | Sub  -> Oarith Osub
+  | Mult -> Oarith Omul
+  | Div  -> Oarith Odiv
+  | Pow  -> Oarith Opow
 
 let from_cop (cop: Ir_sig.cop) : O.op =
   match cop with
-  | Eq -> Oeq
-  | NotEq -> One
-  | Lt -> Olt
-  | LtE -> Ole
-  | Gt -> Ogt
-  | GtE -> Oge
+  | Eq    -> Obool Oeq
+  | NotEq -> Obool One
+  | Lt    -> Obool Olt
+  | LtE   -> Obool Ole
+  | Gt    -> Obool Ogt
+  | GtE   -> Obool Oge
 
 let from_const (c: Ir_sig.const) : const =
   match c with

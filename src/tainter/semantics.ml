@@ -299,7 +299,7 @@ and expr_eval ?(typ=None) (e : E.expr) (cnf: config) (ctx: context) : (E.texpr o
     | Econst c -> [ Some (Tconst (Taint.empty,c)), cnf ]
     | Evar v ->
       (* TODO: fix bug, not checking type of v *)
-      let te, state = D.find v cnf.state in
+      let te, state = D.find ~typ v cnf.state in
       [ Some te, { cnf with state } ]
     | Euop (op, e) ->
       let tecnfs = expr_eval ~typ e cnf ctx in
@@ -308,6 +308,11 @@ and expr_eval ?(typ=None) (e : E.expr) (cnf: config) (ctx: context) : (E.texpr o
         let t, e = E.get_taint te, E.get_expr te in
         Some (E.Tuop (t, op, e)), cnf) tecnfs
     | Eop (e0, op, e1) ->
+      let typ =
+        if L.Ops.is_op_logic op then
+          Some L.Bool
+        else
+          Some L.Int in
       let tecnfs = expr_eval ~typ e0 cnf ctx in
       let tecnfs = List.fold_left (fun acc (te0,cnf) -> (expr_eval ~typ e1 cnf ctx |> List.map (fun (te1,cnf) -> te0,te1,cnf)) @ acc) [] tecnfs in
       (* Since expr_eval returns a list, we have to run expr_eval of e1 for each of the generated configs *)
@@ -820,8 +825,8 @@ and stmt_for cnf ctx : (bool -> config option) list =
       let guard = E.get_expr te in
       let hd = E.expr_2texpr (E.hd guard) taint in
       let empty = E.Econst Cempty in
-      let t_te = E.Tbop (taint,empty,Oeq,guard) in
-      let f_te = E.Tbop (taint,empty,One,guard) in
+      let t_te = E.Tbop (taint,empty,Obool Oeq,guard) in
+      let f_te = E.Tbop (taint,empty,Obool One,guard) in
       let t_branch = begin match D.check_argument cnf.state t_te |> fst with
         | SAT ->
           if !(Utils.debug) then Printf.printf "stmt_for: t_branch SAT\n";

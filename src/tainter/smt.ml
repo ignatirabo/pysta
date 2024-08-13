@@ -128,7 +128,7 @@ let new_var ?(typ=None) (v: vname) : vname =
       (fun v -> mk_symbol v |> mk_const |> mk_seq_unit)
     | Some Bool ->
       (fun v -> mk_symbol v |> mk_bool_const)
-    | _ -> failwith "We don't care"
+    | _ -> failwith "SMT.new_var: Unsupported type"
   end in
   let zexp = mk v' in
   valua := SMap.add v' zexp !valua;

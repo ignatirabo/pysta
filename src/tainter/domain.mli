@@ -17,13 +17,13 @@ val get_sp : state -> sp
 val get_svm : state -> svm
 val set_sp : sp -> state -> state
 val set_svm : svm -> state -> state
-val new_var : state -> vname -> state
+val new_var : ?typ:L.typ option -> state -> vname -> state
 val new_obj : state -> vname -> string option -> state
 val new_symbol : ?typ:L.typ option -> vname -> expr
 val new_tsymbol : ?typ:L.typ option -> ?taint:Taint.t option -> vname -> texpr
 val update_elt_opt : vname -> (elt option -> elt option) -> state -> state
 val update_elt : vname -> elt -> state -> state
-val find : vname -> state -> elt * state
+val find : ?typ:L.typ option -> vname -> state -> elt * state
 val find_obj : ?clssname:string option -> vname -> state -> elt * state
 val find_limited : vname -> state -> elt * state
 val add_constraint :

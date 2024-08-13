@@ -35,20 +35,20 @@ let from_uop (uop: Language.Ops.uop) : t =
 
 let from_bop (bop: Language.Ops.op) : t =
   match bop with
-  | Oadd -> `String "Oadd"
-  | Osub -> `String "Osub"
-  | Omul -> `String "Omul"
-  | Odiv -> `String "Odiv"
-  | Omod -> `String "Omod"
-  | Ole  -> `String "Ole"
-  | Olt  -> `String "Olt"
-  | Oeq  -> `String "Oeq"
-  | One  -> `String "One"
-  | Oge  -> `String "Oge"
-  | Ogt  -> `String "Ogt"
-  | Oand -> `String "Oand"
-  | Oor  -> `String "Bop"
-  | Opow -> `String "Pow"
+  | Oarith Oadd -> `String "Oadd"
+  | Oarith Osub -> `String "Osub"
+  | Oarith Omul -> `String "Omul"
+  | Oarith Odiv -> `String "Odiv"
+  | Oarith Omod -> `String "Omod"
+  | Oarith Opow -> `String "Pow"
+  | Obool Ole  -> `String "Ole"
+  | Obool Olt  -> `String "Olt"
+  | Obool Oeq  -> `String "Oeq"
+  | Obool One  -> `String "One"
+  | Obool Oge  -> `String "Oge"
+  | Obool Ogt  -> `String "Ogt"
+  | Ologic Oand -> `String "Oand"
+  | Ologic Oor  -> `String "Bop"
 
 let rec from_expr (e: Language.Expr.expr) : string * t =
   match e with

@@ -40,8 +40,9 @@ let set_sp sp k = {k with sp=sp}
 let set_svm svm k = {k with svm=svm}
 
 (** Assigns fresh value to v, ignoring previous value or creating v if necessary *)
-let new_var (k: state) (v: vname) : state =
-  let sv = SMT.new_var v in
+let new_var ?(typ=None) (k: state) (v: vname) : state =
+  let typ = try Some (L.typ_to_smt (Option.get typ)) with _ -> None in
+  let sv = SMT.new_var ~typ v in
   let e: texpr = Tvar (Taint.empty,sv) in
   { k with svm = Svm.update v (fun _ -> Some e) k.svm }
 
@@ -81,24 +82,17 @@ let new_tsymbol ?(typ=None) ?(taint=None) (v: vname) : texpr =
 let update_elt_opt (v: vname) (f: elt option -> elt option) k =
   { k with svm = Svm.update v f k.svm }
 
-(** Update *)
+(** Update replaces the value if it exists, or adds it if it does not *)
 let update_elt (v: vname) (elt: elt) (k: state) =
-  (* match Svm.find_opt v k.svm with
-  | None ->
-    let svm = Svm.update v (fun _ -> Some elt) k.svm in
-    { k with svm }
-  | Some (var, _) ->
-    let svm = Svm.update v (fun _ -> Some elt) k.svm in
-    { k with svm } *)
   let svm = Svm.update v (fun _ -> Some elt) k.svm in
   { k with svm }
 
 (** Return value of variable if it exists in state, if not create a new value *)
-let find (v: vname) (k: state) : elt * state =
+let find ?(typ=None) (v: vname) (k: state) : elt * state =
   try
     Svm.find v k.svm, k
   with Not_found ->
-    let k = new_var k v in
+    let k = new_var ~typ k v in
     Svm.find v k.svm, k
 
 let find_obj ?(clssname=None) (v: vname) (k: state) : elt * state =

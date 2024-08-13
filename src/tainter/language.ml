@@ -10,37 +10,81 @@ module Ops = struct
   (* unary *)
   type uop = Onot [@@deriving compare]
   (* binary *)
-  type op =
-  | Oadd | Osub | Omul | Odiv | Omod | Opow
+  type op_arith =
+  | Oadd | Osub | Omul | Odiv | Omod | Opow [@@deriving compare]
   (* comparisons *)
-  | Ole | Olt | Oeq | One | Oge | Ogt
+  type op_bool =
+  | Ole | Olt | Oeq | One | Oge | Ogt [@@deriving compare]
   (* logics *)
+  type op_logic =
   | Oand | Oor [@@deriving compare]
+  type op =
+  | Oarith of op_arith | Obool of op_bool | Ologic of op_logic [@@deriving compare]
+  let get_op_arith op = match op with
+    | Oarith op -> op
+    | _ -> failwith "get_op_arith: not an arithmetic operator."
+  let get_op_bool op = match op with
+    | Obool op -> op
+    | _ -> failwith "get_op_bool: not a boolean operator."
+  let get_op_logic op = match op with
+    | Ologic op -> op
+    | _ -> failwith "get_op_logic: not a logic operator."
   let uop_2str = function
     | Onot  -> "!"
-  let op_2str = function
+  let op_arith_2str = function
     | Oadd  -> "+"
     | Osub  -> "-"
     | Omul  -> "*"
     | Odiv  -> "/"
     | Omod  -> "%"
     | Opow  -> "**"
+  let op_bool_2str = function
     | Ole   -> "<="
     | Olt   -> "<"
     | Ogt   -> ">"
     | Oge   -> ">="
     | Oeq   -> "="
     | One   -> "!="
+  let op_logic_2str = function
     | Oand  -> "&&"
     | Oor   -> "||"
-  let op_2fun (op: op) : int -> int -> int =
+  let op_2str = function
+    | Oarith op -> op_arith_2str op
+    | Obool op -> op_bool_2str op
+    | Ologic op -> op_logic_2str op
+  let op_arith_2fun (op: op_arith) : int -> int -> int =
     match op with
     | Oadd -> ( + )
     | Osub -> ( - )
     | Omul -> ( * )
     | Odiv -> ( / )
     | Omod -> ( mod )
-    | _ -> failwith "op_2fun: TODO"
+    | Opow -> (fun x y -> int_of_float (float_of_int x ** float_of_int y))
+  let op_bool_2fun (op: op_bool) : int -> int -> bool =
+    match op with
+    | Ole -> ( <= )
+    | Olt -> ( < )
+    | Oge -> ( >= )
+    | Ogt -> ( > )
+    | Oeq -> ( = )
+    | One -> ( <> )
+  let op_logic_2fun (op: op_logic) : bool -> bool -> bool =
+    match op with
+    | Oand -> ( && )
+    | Oor -> ( || )
+  let op_neg : op -> op = function
+    | Oarith _ -> failwith "expr_neg: negation of arithmetic."
+    | Ologic Oand -> Ologic Oor
+    | Ologic Oor -> Ologic Oand
+    | Obool Oeq -> Obool One
+    | Obool One -> Obool Oeq
+    | Obool Ole -> Obool Ogt
+    | Obool Olt -> Obool Oge
+    | Obool Oge -> Obool Olt
+    | Obool Ogt -> Obool Ole
+  let is_op_logic = function
+    | Ologic _ -> true
+    | _ -> false
 end
 
 module Expr = struct
@@ -158,18 +202,9 @@ module Expr = struct
       (* failwith "expr_neg: negation of unexpected expression." *)
     | Euop (Onot, e) -> e
     | Eop (e0, o, e1) ->
-      let no =
-        match o with
-        | Oadd | Osub | Omul | Odiv | Omod | Opow -> failwith "expr_neg: negation of arithmetic."
-        | Oor -> Oand | Oand -> Oor
-        | Oeq -> One
-        | One -> Oeq
-        | Ole -> Ogt
-        | Olt -> Oge
-        | Oge -> Olt
-        | Ogt -> Ole in
-      let e0 = if o = Oor || o = Oand then expr_neg e0 else e0 in
-      let e1 = if o = Oor || o = Oand then expr_neg e1 else e1 in
+      let no = op_neg o in
+      let e0 = if o = Ologic Oor || o = Ologic Oand then expr_neg e0 else e0 in
+      let e1 = if o = Ologic Oor || o = Ologic Oand then expr_neg e1 else e1 in
       Eop (e0, no, e1)
     | Elist _ | Edict _ | Eattrib _ -> failwith "expr_neg: Negation of list, dict or obj."
   let texpr_neg : texpr -> texpr = function
@@ -177,18 +212,9 @@ module Expr = struct
     | Tvar _ | Tlist _ | Tdict _ | Tobj _ -> failwith "texpr_neg: expression not supported."
     | Tuop (t,Onot,e) -> expr_2texpr e t
     | Tbop (t,e0, o, e1) ->
-      let no =
-        match o with
-        | Oadd | Osub | Omul | Odiv | Omod | Opow -> failwith "expr_neg: negation of arithmetic."
-        | Oor -> Oand | Oand -> Oor
-        | Oeq -> One
-        | One -> Oeq
-        | Ole -> Ogt
-        | Olt -> Oge
-        | Oge -> Olt
-        | Ogt -> Ole in
-      let e0 = if o = Oor || o = Oand then expr_neg e0 else e0 in
-      let e1 = if o = Oor || o = Oand then expr_neg e1 else e1 in
+      let no = op_neg o in
+      let e0 = if o = Ologic Oor || o = Ologic Oand then expr_neg e0 else e0 in
+      let e1 = if o = Ologic Oor || o = Ologic Oand then expr_neg e1 else e1 in
       Tbop (t,e0, no, e1)
 
   let set_taint te t = match te with
@@ -363,7 +389,7 @@ module Expr = struct
     | Econst (Cint n) -> n
     | Eop (e0, op, e1) ->
       let i0 = expr_2int e0 in
-      let op = op_2fun op in
+      let op = op_arith_2fun (get_op_arith op) in
       let i1 = expr_2int e1 in
       op i0 i1
     | _ -> pp_expr stdout e; raise Not_a_number
@@ -377,20 +403,20 @@ module Expr = struct
   let op_eval (op : Ops.op) (ze0 : Smt.zexpr) (ze1: Smt.zexpr) : Smt.zexpr =
     let open Smt in
     match op with
-    | Oadd -> mk_add [ze0; ze1]
-    | Osub -> mk_sub [ze0; ze1]
-    | Omul -> mk_mul [ze0; ze1]
-    | Odiv -> mk_div ze0 ze1
-    | Omod -> mk_mod ze0 ze1
-    | Opow -> mk_pow ze0 ze1
-    | Ole -> mk_le ze0 ze1
-    | Olt -> mk_lt ze0 ze1
-    | Oeq -> mk_eq ze0 ze1
-    | One -> mk_not (mk_eq ze0 ze1)
-    | Oge -> mk_ge ze0 ze1
-    | Ogt -> mk_gt ze0 ze1
-    | Oand -> mk_and [ze0; ze1]
-    | Oor -> mk_or [ze0; ze1]
+    | Oarith Oadd -> mk_add [ze0; ze1]
+    | Oarith Osub -> mk_sub [ze0; ze1]
+    | Oarith Omul -> mk_mul [ze0; ze1]
+    | Oarith Odiv -> mk_div ze0 ze1
+    | Oarith Omod -> mk_mod ze0 ze1
+    | Oarith Opow -> mk_pow ze0 ze1
+    | Obool Ole -> mk_le ze0 ze1
+    | Obool Olt -> mk_lt ze0 ze1
+    | Obool Oeq -> mk_eq ze0 ze1
+    | Obool One -> mk_not (mk_eq ze0 ze1)
+    | Obool Oge -> mk_ge ze0 ze1
+    | Obool Ogt -> mk_gt ze0 ze1
+    | Ologic Oand -> mk_and [ze0; ze1]
+    | Ologic Oor -> mk_or [ze0; ze1]
 
   let const_to_zexpr (c: const) : Smt.zexpr =
     let open Smt in
@@ -496,6 +522,11 @@ let rec typ_to_str = function
   | String -> "str"
   | List typ -> "list[" ^ typ_to_str typ ^ "]"
   | Bool -> "bool"
+let rec typ_to_smt = function
+  | Int -> Smt.Int
+  | String -> Smt.String
+  | Bool -> Smt.Bool
+  | List typ -> Smt.List (typ_to_smt typ)
 
 (** Statements *)
 type stmt =
