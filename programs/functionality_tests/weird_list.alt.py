@@ -1,10 +1,10 @@
 def handler(event):
     x : list[int] = event['list']
     ls = event['list']
-    ls[1] = 3
-    x[1] = list[1]
-    if x[1] == 2:
-        print(x[1])
+    ls[0] = 3
+    x[0] = ls[0]
+    if x[0] == 2:
+        print(x[0])
     else:
         print("Error")
 

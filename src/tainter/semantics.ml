@@ -699,15 +699,12 @@ and stmt_assign cnf ctx : config list =
         let block = List.tl cnf.block in
         match v with
         | Name v ->
-          (* In the next line is not clear to me which cnf.state to use, and why cnf_e.state
-            doesn't expand the SP. *)
           let state = D.update_elt v te cnf_e.state in
           { cnf with state ; block }
         | Subscript (v,i) ->
           begin try
             let i = expr_eval i cnf ctx |> List.hd |> fst |> Option.get |> E.texpr_2expr |> E.expr_2int in
             let ls = D.find v cnf.state |> fst |> E.get_list in
-            (* TODO: fix this line for weird_list.py *)
             let ls = E.Tlist (Aux.list_nth_replace i te ls) in
             let state = D.update_elt v ls cnf_e.state in
             { cnf with state ; block }
@@ -743,13 +740,14 @@ and stmt_expr cnf ctx : E.texpr option * config =
     begin match tecnfs with
     | [ (te,cnf') ] ->
       (* TODO check this line *)
+      Printf.printf "stmt_expr: one expression returned\n";
       if Flag.check_flag Flag.FINAL cnf'.flag then
         te, { cnf' with block=[] }
       else
         let block = try List.tl cnf.block with _ -> [] in
         te, { cnf with block }
     | (te,cnf')::_ ->
-      Printf.printf "stmt_expr: WARNING!!! more than one expression returned";
+      Printf.printf "stmt_expr: WARNING!!! more than one expression returned\n";
       if Flag.check_flag Flag.FINAL cnf'.flag then
         te, { cnf' with block=[] }
       else
@@ -830,8 +828,6 @@ and stmt_for cnf ctx : (bool -> config option) list =
           let state = D.add_constraint ~line_number t_te cnf.state in
           let svm = Svm.add v hd (D.get_svm state) in
           let state = D.set_svm svm state in
-          (* TODO: we need to update state with new variable v taking the value of the element in
-             the list *)
           let block = b @ [ (Lo.location_temp, L.Clear v) ] @ List.tl cnf.block in
           let id = Id.add_message ["FOR true"] cnf.id in
           Some { cnf with state ; block ; id }
