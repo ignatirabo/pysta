@@ -321,38 +321,6 @@ and expr_eval ?(typ=None) (e : E.expr) (cnf: config) (ctx: context) : (E.texpr o
         Some (E.Tbop (t, e0, op, e1)), cnf) tecnfs
     | Ecall (f, exprs) ->
       eval_call ~typ e cnf ctx
-      (* let f_flat = E.flatten_attr f in
-      if !Utils.debug then Printf.printf "expr_eval: calling proc %s\n" f_flat;
-      (* Check if it's class constructor *)
-      if Utils.is_class_constructor f_flat then
-        begin try
-          let clss = SMap.find f_flat ctx.prog.classes in
-          let cnf' = init ctx in
-          let cnf' = { cnf' with block=L.block_to_ext clss.body } in
-          let cnf' = exec_block cnf' ctx |> List.hd |> snd in
-          (* Get svm *)
-          let m = cnf'.state.svm in
-          [ Some (Tobj (Some f, m)), cnf ]
-        with Not_found ->
-          (* It's a class constructor but we don't know the class *)
-          (* sqlite_utils.db.Database.query *)
-          Printf.printf "f = %s\n\n\n\n" f;
-          (* let sign_f = Signature.find ctx.sign f in *)
-          [ Some (Tobj (Some f, SMap.empty)), cnf]
-        end
-      else
-        begin
-        (* If it's not a class constructor search function *)
-        Printf.printf "f = %s\n\n\n\n" f;
-        let cnf_f = enter_fun (f,exprs) cnf ctx in
-        let state = cnf_f.state in
-        if !Utils.debug then Printf.printf "expr_eval: is cnf final? %b\n" (Flag.check_flag Flag.FINAL cnf_f.flag);
-        if Flag.check_flag Flag.FINAL cnf_f.flag then
-          [ None, { cnf_f with block=[] } ]
-        else
-          let ls = exec_block cnf_f ctx in
-          List.map (fun_taint_output (f,exprs) { cnf with state } ctx) ls
-        end *)
     | Elist ls ->
       let ls = List.fold_left (fun acc e ->
         (* List of possible values of e, because e may be a function *)
