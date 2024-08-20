@@ -35,7 +35,7 @@ module Expr : sig
     | Eop        of expr * Ops.op * expr (** binary op        *)
     | Ecall      of expr * expr list    (** function call *)
     | Esubscript of expr * const         (** list access *)
-    | Eattrib    of vname * expr         (** var name, attribute expr: possible name or fun call *)
+    | Eattrib    of expr * vname         (** var name, attribute expr: possible name or fun call *)
     | Ejoined    of expr list            (** joined expressions (e.g., JoinedStr                 *)
     [@@deriving compare]
   type texpr =
@@ -97,7 +97,8 @@ module E := Expr
 type vname := string
 type expr := E.expr
 type lexpr := E.lexpr
-type typ = Int | String | List of typ | Bool
+(* type typ = Int | String | List of typ | Bool *)
+type typ = Int | String | List of typ | Bool | Dict | Obj
 val typ_to_str : typ -> string
 val typ_to_smt : typ -> Smt.typ
 val typ_option_to_smt : typ option -> Smt.typ option

@@ -70,7 +70,7 @@ let new_tsymbol ?(typ=None) ?(taint=None) (v: vname) : texpr =
 let update_elt_opt (v: vname) (f: elt option -> elt option) k =
   { k with svm = Svm.update v f k.svm }
 
-(** Update replaces the value if it exists, or adds it if it does not *)
+(* * Update replaces the value if it exists, or adds it if it does not *)
 let update_elt (v: vname) (elt: elt) (k: state) =
   let svm = Svm.update v (fun _ -> Some elt) k.svm in
   { k with svm }

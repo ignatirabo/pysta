@@ -144,9 +144,9 @@ let rec cexpr_cast ?(location: C.Location.t option = None) (e: C.Expression.t) :
     let args = List.map (cexpr_cast ~location) args in
     Call (func, args)
   | Attribute {value; attr; _} ->
-    let id = get_id value in
-    let e: expr = Name (C.Identifier.to_string attr) in
-    Attr (id, e)
+    let value = cexpr_cast ~location value in
+    let id = C.Identifier.to_string attr in
+    Attr (value, id)
   | Compare {left; ops; comparators; _} ->
     let left = cexpr_cast ~location left in
     let ops = List.map cop_transfer ops in

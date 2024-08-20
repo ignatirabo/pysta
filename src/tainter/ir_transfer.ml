@@ -102,14 +102,14 @@ let rec from_expr (e: Ir_sig.expr) : expr * SSet.t =
     let index = from_slice slice in
     Esubscript (var, index), vset
   | Slice _ -> failwith "from_expr: Slice TODO."
-  | Attr (id, expr) ->
+  | Attr (expr, id) ->
     let expr, set = from_expr expr in
     (* begin match expr with
     | Ecall (f,exprs) ->
       if Utils.starts_with_capital id then
         Ecall (id ^ "." ^ f, exprs), set
       else *)
-        Eattrib (id, expr), set
+        Eattrib (expr, id), set
     (* | _ ->
       Eattrib (id, expr), set *)
     (* end *)

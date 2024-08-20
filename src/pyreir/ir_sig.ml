@@ -35,7 +35,7 @@ type expr =
   | BOp  of bop * expr * expr
   | Comp of cop * expr * expr
   | Call of expr * expr list
-  | Attr of id * expr        (* Call attribute of id, this could be a value or a function call. *)
+  | Attr of expr * id        (* Get attribute of expression *)
   | Subscript of expr * expr (* Last expr is constant or slice. Slice is not implemented yet. *)
   | Slice of expr option * expr option * expr option
   | Joined of expr list

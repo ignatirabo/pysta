@@ -14,7 +14,7 @@ module SMT = Smt
 type context = { prog: P.prog ; sign: Signature.t list ; locs: Lo.location option }
 type config = { block: L.block_ext ; state: D.state ; flag: Flag.t ; id: Id.t ; counter: C.t }
 
-let rec parse_subscript (expr: E.expr) (attr_ls, key_ls) : string list * E.const list =
+(* let rec parse_subscript (expr: E.expr) (attr_ls, key_ls) : string list * E.const list =
   match expr with
   | Esubscript (attr, key) ->
     parse_subscript attr (attr_ls, key :: key_ls)
@@ -22,7 +22,7 @@ let rec parse_subscript (expr: E.expr) (attr_ls, key_ls) : string list * E.const
     parse_subscript attr (name :: attr_ls, key_ls)
   | Evar name ->
     (List.rev (name::attr_ls), key_ls)
-  | _ -> failwith "parse_subscript: unexpected case."
+  | _ -> failwith "parse_subscript: unexpected case." *)
 
 let rec find_loc_block (loc: Lo.location) (block: L.block) : L.block option =
   match block with
@@ -345,6 +345,8 @@ and expr_eval ?(typ=None) (e : E.expr) (cnf: config) (ctx: context) : (E.texpr o
       (* let attrs, _ = parse_subscript e ([v],[]) in *)
       (* eval_subscript_aux ~typ attrs [] (E.Tvar (Taint.empty,v)) None ctx in *)
       failwith "to fix simple eattrib"
+      (* TODO: to fix this, I will redo the whole code of the attributes and subscript by creating a
+      stack. The stack is important to remember the past and be able to update properly. *)
     | Esubscript (expr, c) ->
       eval_subscript ~typ e cnf ctx
     | Ejoined values ->
@@ -494,8 +496,43 @@ and eval_call ?(typ=None) (e: E.expr) (cnf: config) (ctx: context) : (E.texpr op
   | _ ->
     failwith "expr_eval: expression on eattrib is not a var." *)
 
+(* and eval_attrib ?(typ=None) (expr: E.expr) (cnf: config) (ctx: context) : (E.texpr option * config) list =
+  match expr with
+  | Eattrib (left, attr) ->
+    (* 1. Eval left side *)
+    let tecnfs = expr_eval ~typ:(Some L.Obj) left cnf ctx in
+    (* 2. From returned value, get attribute *)
+    List.map (fun (te,cnf) ->
+      let te = try Option.get te with Invalid_argument _ -> failwith "eval_attrib: None" in
+      match te with
+      | E.Tobj (clssname_o,tmap) ->
+        (* Get attribute from tmap *)
+        let te, cnf = try (SMap.find attr tmap, cnf) with Not_found ->
+          let taint = get_taint_clss clssname_o attr ctx in
+          let taint = try Option.get taint with _ -> T.empty in
+          let te, tmap = add_symb_tmap tmap attr taint in
+          let state = D.update_elt (E.expr_2str left) (E.Tobj (clssname_o,tmap)) cnf.state in
+          (te, { cnf with state}) in
+        (Some te, cnf)
+      | _ -> failwith "eval_attrib: not an object.") tecnfs
+  | _ -> failwith "eval_attrib: not an attrib." *)
+
+(* and eval_subs_attrs ?(typ=None) (expr: E.expr) (cnf: config) (ctx: context) : (E.texpr option * config) list =
+  let rec aux_eval (expr: E.expr) cnf (acc: E.expr list) : (E.texpr option * config) list =
+    match expr with
+    | Eattrib (left, key) ->
+      (* 1. Eval left side *)
+      let tecnfs = expr_eval ~typ left cnf ctx in
+      (* 2. From returned value, get attribute *)
+
+      []
+    | Esubscript (left, attr) ->
+      []
+    |_ -> failwith "eval_subs_attrs: unexpected expression." in
+  aux_eval expr cnf [] *)
+
 and eval_subscript ?(typ=None) (expr: E.expr) (cnf: config) (ctx: context) : (E.texpr option * config) list =
-  let attrs, keys = parse_subscript expr ([],[]) in
+  (* let attrs, keys = parse_subscript expr ([],[]) in
   (* 1. Squash ATTR list *)
   (* 2. Squash KEY list *)
   match expr with
@@ -517,7 +554,8 @@ and eval_subscript ?(typ=None) (expr: E.expr) (cnf: config) (ctx: context) : (E.
       (* Printf.printf "te=%a ; obj=%a\n" E.pp_texpr te E.pp_texpr obj; *)
       let state = D.set_svm (E.get_tmap obj) cnf.state in
       [ Some te, { cnf with state } ]
-  | _ -> failwith "eval_subscript: not a subscript."
+  | _ -> failwith "eval_subscript: not a subscript." *)
+  failwith "to fix"
 
 and eval_subscript_aux ?(typ=None) (attrs: string list) (keys: string list) (obj: E.texpr) (carried_taint: T.t option) (carried_clssname: string option) (ctx: context) : E.texpr * E.texpr =
   match attrs with

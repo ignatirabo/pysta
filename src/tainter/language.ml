@@ -106,7 +106,7 @@ module Expr = struct
     | Eop        of expr * Ops.op * expr (** binary op      *)
     | Ecall      of expr * expr list    (** function call  *)
     | Esubscript of expr * const         (** list access    *)
-    | Eattrib    of vname * expr         (** var name, attribute expr: possible name or fun call *)
+    | Eattrib    of expr * vname         (** var name, attribute expr: possible name or fun call *)
     | Ejoined    of expr list            (** joined expressions (e.g., JoinedStr                 *)
     [@@deriving compare]
   type texpr =
@@ -143,20 +143,20 @@ module Expr = struct
   let rec flatten_attr (e: expr) : string =
     match e with
     | Evar id -> id
-    | Eattrib (id,e) -> id ^ "." ^ flatten_attr e
+    | Eattrib (e,id) -> flatten_attr e ^ "." ^ id
     | _ -> failwith "flatten_attr: unexpected expr."
-  
-  let rec get_last_attr (e: expr) : string =
-    match e with
-    | Evar id -> id
-    | Eattrib (_,e) -> get_last_attr e
-    | _ -> failwith "get_last_attr: unexpected expr."
 
   let rec get_attr_name (e: expr) : string =
     match e with
     | Evar id -> id
-    | Eattrib (id,_) -> id
+    | Eattrib (e,_) -> get_attr_name e
     | _ -> failwith "get_attr_name: unexpected expr."
+
+  let rec get_last_attr (e: expr) : string =
+    match e with
+    | Evar id -> id
+    | Eattrib (_,id) -> id
+    | _ -> failwith "get_last_attr: unexpected expr."
 
   let expr_2str (e: expr) : string =
     match e with
@@ -325,10 +325,9 @@ module Expr = struct
     | Esubscript (Evar v, i) ->
       Printf.fprintf chan "%s[%a]" v pp_const i
     | Eattrib (v, attr) ->
-      Printf.fprintf chan "%s.%a" v pp_expr attr
-    | Esubscript (e,c) -> (* | _ -> *)
+      Printf.fprintf chan "%a.%s" pp_expr v attr
+    | Esubscript (e,c) ->
       Printf.fprintf chan "%a[%a]" pp_expr e pp_const c
-      (* failwith "pp_expr: TODO implement subscript." *)
     | Ejoined values ->
       Printf.fprintf chan "Joined%a" pp_seq values
 
@@ -516,7 +515,7 @@ module E = Expr
 type vname = E.vname
 type expr = E.expr
 type lexpr = E.lexpr
-type typ = Int | String | List of typ | Bool
+type typ = Int | String | List of typ | Bool | Dict | Obj
 let rec typ_to_str = function
   | Int -> "int"
   | String -> "str"
